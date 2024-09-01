@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
@@ -9,49 +9,46 @@ import { redirect, useRouter } from "next/navigation";
 import { enqueueSnackbar } from "notistack";
 
 function Login() {
-  const { register, handleSubmit } = useForm();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
   const router = useRouter();
   const [isLoading, setisLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    redirect(token);
+    if (token) {
+      router.push("/dashboard");
+    }
   }, [router]);
 
-  const onSubmit = (data) => {
-    if (!data.email) {
-      enqueueSnackbar("Enter Email", { variant: "error" });
-    } else if (!data.password) {
-      enqueueSnackbar("Enter Password", { variant: "error" });
-    } else {
-      userLogin(data);
+  const onSubmit = async (data) => {
+    if (!data.email || !data.password) {
+      // You could handle errors here if needed
+      alert("Email or Password is missing");
     }
+    await userLogin(data);
   };
 
-  const redirect = (token) =>{
-    if(token){
-      router.push("/dashboard");
-    }else{
-      router.refresh('/login');
+  const userLogin = async (data) => {
+    setisLoading(true);
+    try {
+      const res = await axios.post("/api/login", data);
+      if (res.status === 200) {
+        console.log(res);
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("role", res.data.role);
+        localStorage.setItem("user_id", res.data.userId);
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      console.log(err.message);
+    } finally {
+      setisLoading(false);
     }
-  }
-
-const userLogin = async (data) => {
-  setisLoading(true);
-  try {
-    const res = await axios.post("/api/login", data);
-    if(res.status === 200){
-      console.log(res);
-      localStorage.setItem("token",res.data.token)
-        localStorage.setItem("role",res.data.role)
-        localStorage.setItem("user_id",res.data.userId)
-        redirect(res.data.token)
-    }
-  } catch(err){
-    setisLoading(false)
-    console.log(err.message)
-  }
-}
+  };
 
   return (
     <div className="flex h-screen">
@@ -84,16 +81,24 @@ const userLogin = async (data) => {
                     type="email"
                     placeholder="Email"
                     className="focus-visible:ring-transparent focus-visible:border-[1.5px] focus-visible:border-purple-800"
-                    {...register("email")}
+                    {...register("email", { required: "Email is required" })}
                   />
+                  {errors.email && (
+                    <p className="text-red-500">{errors.email.message}</p>
+                  )}
                 </div>
                 <div>
                   <Input
                     type="password"
                     placeholder="Password"
                     className="focus-visible:ring-transparent focus-visible:border-[1.5px] focus-visible:border-purple-800"
-                    {...register("password")}
+                    {...register("password", {
+                      required: "Password is required",
+                    })}
                   />
+                  {errors.password && (
+                    <p className="text-red-500">{errors.password.message}</p>
+                  )}
                 </div>
 
                 <div className="flex justify-center">
